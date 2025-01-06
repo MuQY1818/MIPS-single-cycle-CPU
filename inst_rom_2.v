@@ -5,6 +5,7 @@ module inst_rom(
     );
 
     wire [31:0] inst_rom[20:0];  // 指令存储器20个指令，每个指令32位
+
     //------------- 指令序列 ---------|地址|--- 行为 -----|- 结果 -----//
     assign inst_rom[ 0] = 32'h24020001; // 00H: addiu $2,$0,#1    | $2 = 1 (a0)
     assign inst_rom[ 1] = 32'h24030001; // 04H: addiu $3,$0,#1    | $3 = 1 (a1)
@@ -12,7 +13,7 @@ module inst_rom(
     assign inst_rom[ 3] = 32'h24840001; // 0CH: addiu $4,$4,#1    | i++ (递增i)
     assign inst_rom[ 4] = 32'h24010001; // 10H: addiu $1,$0,#1    | $1 = 1
     assign inst_rom[ 5] = 32'h00812824; // 14H: and   $5,$4,$1    | $5 = i & 1 (奇偶判断)
-    assign inst_rom[ 6] = 32'h10A00005; // 18H: beq   $5,$0,#5    | 如果是偶数，跳转5条指令
+    assign inst_rom[ 6] = 32'h10A00006; // 18H: beq   $5,$0,#6    | 如果是偶数，跳转6条指令
     // 奇数情况：2an+1 + 3an
     assign inst_rom[ 7] = 32'h24010002; // 1CH: addiu $1,$0,#2    | $1 = 2
     assign inst_rom[ 8] = 32'h70236002; // 20H: mul   $12,$1,$3   | $12 = 2 * $3 (2an+1)
