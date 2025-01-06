@@ -1,152 +1,118 @@
 `timescale 1ns / 1ps
-//*************************************************************************
-//   > æ–‡ä»¶å: tb.v
-//   > æè¿°: å•å‘¨æœŸCPUæµ‹è¯•å¹³å°
-//   > åŠŸèƒ½: 
-//          1. ç”Ÿæˆæ—¶é’Ÿå’Œå¤ä½ä¿¡å·
-//          2. ç›‘æ§CPUè¿è¡ŒçŠ¶æ€
-//          3. éªŒè¯ç‰¹æ®Šæ•°åˆ—è®¡ç®—ç»“æœ
-//          4. è°ƒè¯•å…³é”®ä¿¡å·å˜åŒ–
-//*************************************************************************
 module tb;
-    // æ—¶é’Ÿå’Œå¤ä½ä¿¡å·
-    reg clk;                  // CPUä¸»æ—¶é’Ÿ
-    reg clk0;                // å¯„å­˜å™¨æ–‡ä»¶æ—¶é’Ÿ
-    reg resetn;              // å¤ä½ä¿¡å·ï¼Œä½ç”µå¹³æœ‰æ•ˆ
+    // Ê±ÖÓºÍ¸´Î»ĞÅºÅ
+    reg clk;                  // CPUÖ÷Ê±ÖÓ
+    reg clk0;                // ¼Ä´æÆ÷ÎÄ¼şÊ±ÖÓ
+    reg resetn;              // ¸´Î»ĞÅºÅ£¬µÍµçÆ½ÓĞĞ§
     
-    // è°ƒè¯•æ¥å£ä¿¡å·
-    reg [4:0] rf_addr;       // å¯„å­˜å™¨å †è¯»åœ°å€
-    reg [31:0] mem_addr;     // å­˜å‚¨å™¨è¯»åœ°å€
+    // µ÷ÊÔ½Ó¿ÚĞÅºÅ
+    reg [4:0] rf_addr;       // ¼Ä´æÆ÷¶Ñ¶ÁµØÖ·
+    reg [31:0] mem_addr;     // ´æ´¢Æ÷¶ÁµØÖ·
 
-    // CPUè¿è¡ŒçŠ¶æ€ä¿¡å·
-    wire [31:0] rf_data;     // å¯„å­˜å™¨æ•°æ®
-    wire [31:0] mem_data;    // å­˜å‚¨å™¨æ•°æ®
-    wire [31:0] cpu_pc;      // å½“å‰PCå€¼
-    wire [31:0] cpu_inst;    // å½“å‰æŒ‡ä»¤
+    // CPUÔËĞĞ×´Ì¬ĞÅºÅ
+    wire [31:0] rf_data;     // ¼Ä´æÆ÷Êı¾İ
+    wire [31:0] mem_data;    // ´æ´¢Æ÷Êı¾İ
+    wire [31:0] cpu_pc;      // µ±Ç°PCÖµ
+    wire [31:0] cpu_inst;    // µ±Ç°Ö¸Áî
 
-    // ä¾‹åŒ–å•å‘¨æœŸCPU
+    // Àı»¯µ¥ÖÜÆÚCPU
     single_cycle_cpu uut (
-        .clk0     (clk0     ),  // å¯„å­˜å™¨æ–‡ä»¶æ—¶é’Ÿ
-        .clk      (clk      ),  // CPUä¸»æ—¶é’Ÿ
-        .resetn   (resetn   ),  // å¤ä½ä¿¡å·
-        .rf_addr  (rf_addr  ),  // å¯„å­˜å™¨è¯»åœ°å€
-        .mem_addr (mem_addr ),  // å­˜å‚¨å™¨è¯»åœ°å€
-        .rf_data  (rf_data  ),  // å¯„å­˜å™¨æ•°æ®
-        .mem_data (mem_data ),  // å­˜å‚¨å™¨æ•°æ®
-        .cpu_pc   (cpu_pc   ),  // ç¨‹åºè®¡æ•°å™¨
-        .cpu_inst (cpu_inst )   // å½“å‰æŒ‡ä»¤
+        .clk0     (clk0     ),  // ¼Ä´æÆ÷ÎÄ¼şÊ±ÖÓ
+        .clk      (clk      ),  // CPUÖ÷Ê±ÖÓ
+        .resetn   (resetn   ),  // ¸´Î»ĞÅºÅ
+        .rf_addr  (rf_addr  ),  // ¼Ä´æÆ÷¶ÁµØÖ·
+        .mem_addr (mem_addr ),  // ´æ´¢Æ÷¶ÁµØÖ·
+        .rf_data  (rf_data  ),  // ¼Ä´æÆ÷Êı¾İ
+        .mem_data (mem_data ),  // ´æ´¢Æ÷Êı¾İ
+        .cpu_pc   (cpu_pc   ),  // ³ÌĞò¼ÆÊıÆ÷
+        .cpu_inst (cpu_inst )   // µ±Ç°Ö¸Áî
     );
 
-    // åˆå§‹åŒ–å’Œå¤ä½è¿‡ç¨‹
+    // ³õÊ¼»¯ºÍ¸´Î»¹ı³Ì
     initial begin
-        // åˆå§‹åŒ–ä¿¡å·
+        // ³õÊ¼»¯ĞÅºÅ
         clk = 0;
         clk0 = 0;
         resetn = 0;
         rf_addr = 0;
         mem_addr = 0;
 
-        // å¤ä½å»¶æ—¶
+        // ¸´Î»ÑÓÊ±
         #100;
         resetn = 1;
         
-        // ç­‰å¾…è®¡ç®—å®Œæˆ
+        // µÈ´ı¼ÆËãÍê³É
         #2000;
         
-        // éªŒè¯è®¡ç®—ç»“æœ
-        check_result(5'd5, 32'd9,  "a2");  // æ£€æŸ¥ç¬¬2é¡¹
+        // ÑéÖ¤¼ÆËã½á¹û
+        check_result(5'd5, 32'd9,  "a2");  // ¼ì²éµÚ2Ïî
         #200;
-        check_result(5'd5, 32'd24, "a3");  // æ£€æŸ¥ç¬¬3é¡¹
+        check_result(5'd5, 32'd24, "a3");  // ¼ì²éµÚ3Ïî
         #200;
-        check_result(5'd5, 32'd75, "a4");  // æ£€æŸ¥ç¬¬4é¡¹
+        check_result(5'd5, 32'd75, "a4");  // ¼ì²éµÚ4Ïî
         
-        // æµ‹è¯•å®Œæˆ
+        // ²âÊÔÍê³É
         #100;
-        $display("æµ‹è¯•å®Œæˆ");
+        $display("²âÊÔÍê³É");
         $finish;
     end
 
-    // ç›‘æ§å¯„å­˜å™¨å’ŒæŒ‡ä»¤æ‰§è¡Œ
+    // ¼à¿Ø¼Ä´æÆ÷ºÍÖ¸ÁîÖ´ĞĞ
     initial begin
-        // ç›‘æ§å…³é”®å¯„å­˜å™¨çš„å€¼å˜åŒ–
-        $monitor("Time=%3d PC=%h Inst=%h | $1=%d $2=%d $3=%d $11=%d $12=%d", 
-                 $time,                     // ä»¿çœŸæ—¶é—´
-                 cpu_pc,                    // ç¨‹åºè®¡æ•°å™¨
-                 cpu_inst,                  // å½“å‰æŒ‡ä»¤
-                 uut.rf_module.rf[1],      // $1 - å¸¸æ•°2å’Œ3
+        // Ö»±£ÁôÒ»¸öÖ÷ÒªµÄmonitorÓï¾ä
+        $monitor("Time=%3d PC=%h Inst=%h | i=$4=%d | $5=%d(ÆæÅ¼) | an=$2=%d an+1=$3=%d | $11=%d(³Ë»ı1) $12=%d(³Ë»ı2) | $7=%d(ºÍ)",
+                 $time,                     // ·ÂÕæÊ±¼ä
+                 cpu_pc,                    // ³ÌĞò¼ÆÊıÆ÷
+                 cpu_inst,                  // µ±Ç°Ö¸Áî
+                 uut.rf_module.rf[4],      // $4 - ¼ÆÊıÆ÷i
+                 uut.rf_module.rf[5],      // $5 - ÆæÅ¼ÅĞ¶Ï½á¹û
                  uut.rf_module.rf[2],      // $2 - an
                  uut.rf_module.rf[3],      // $3 - an+1
-                 uut.rf_module.rf[11],     // $11 - 3ané¡¹
-                 uut.rf_module.rf[12]      // $12 - 2an+1é¡¹
+                 uut.rf_module.rf[11],     // $11 - µÚÒ»¸ö³Ë»ı
+                 uut.rf_module.rf[12],     // $12 - µÚ¶ş¸ö³Ë»ı
+                 uut.rf_module.rf[7]       // $7 - ºÍ
                 );
-
-        // ç›‘æ§ä¹˜æ³•å™¨è¿è¡ŒçŠ¶æ€
-        $monitor("DEBUG: mul_op1=%d mul_op2=%d product=%d mult_end=%b", 
-                 uut.alu_module.multiply_module.mult_op1,    // ä¹˜æ•°1
-                 uut.alu_module.multiply_module.mult_op2,    // ä¹˜æ•°2
-                 uut.alu_module.multiply_module.product,     // ä¹˜ç§¯
-                 uut.alu_module.multiply_module.mult_end     // ä¹˜æ³•å®Œæˆæ ‡å¿—
-        );
     end
 
-    // ç›‘æ§æŒ‡ä»¤æ‰§è¡Œè¿‡ç¨‹
+    // Ö»ÔÚ¹Ø¼üÊÂ¼şÊ±ÏÔÊ¾ÏêÏ¸ĞÅÏ¢
     always @(posedge clk) begin
-        // æ˜¾ç¤ºå½“å‰æŒ‡ä»¤å’Œå…³é”®å¯„å­˜å™¨çš„å€¼
-        $display("Time=%5d PC=%h Inst=%h | $1=%10d $2=%10d $3=%10d $11=%10d $12=%10d",
-                 $time, cpu_pc, cpu_inst,
-                 uut.rf_module.rf[1],      // $1  - å¸¸æ•°
-                 uut.rf_module.rf[2],      // $2  - an
-                 uut.rf_module.rf[3],      // $3  - an+1
-                 uut.rf_module.rf[11],     // $11 - 3ané¡¹
-                 uut.rf_module.rf[12]      // $12 - 2an+1é¡¹
-        );
-
-        // ç›‘æ§ä¹˜æ³•æŒ‡ä»¤æ‰§è¡Œ
-        if (cpu_inst[31:26] == 6'b011100 && cpu_inst[5:0] == 6'b000010) begin
-            $display("MUL: %d * %d = %d", 
-                     uut.alu_operand1,     // ä¹˜æ•°1
-                     uut.alu_operand2,     // ä¹˜æ•°2
-                     uut.alu_result        // ä¹˜ç§¯
-            );
+        if (cpu_inst[31:26] == 6'b011100 && cpu_inst[5:0] == 6'b000010) begin  // MULÖ¸Áî
+            $display("\n³Ë·¨ÔËËã: %d * %d = %d", 
+                     uut.alu_operand1, uut.alu_operand2, uut.alu_result);
         end
-
-        // ç›‘æ§åŠ æ³•æŒ‡ä»¤æ‰§è¡Œ
-        if (cpu_inst[31:26] == 6'b000000 && cpu_inst[5:0] == 6'b100001) begin
-            $display("ADD: %d + %d = %d ($7)",
-                     uut.alu_operand1,     // åŠ æ•°1
-                     uut.alu_operand2,     // åŠ æ•°2
-                     uut.alu_result        // å’Œ
-            );
+        else if (cpu_inst[31:26] == 6'b000100) begin  // BEQÖ¸Áî
+            $display("\n·ÖÖ§ÅĞ¶Ï(BEQ): $5=%d, Ä¿±êµØÖ·=%h", 
+                     uut.rf_module.rf[5], uut.jbr_target);
         end
     end
 
-    // ç›‘æ§ALUè¿ç®—è¿‡ç¨‹
+    // ¼à¿ØALUÔËËã¹ı³Ì
     initial begin
         $monitor("ALU: op1=%d op2=%d result=%d | MUL: control=%b end=%b", 
-                 uut.alu_operand1,         // ALUæ“ä½œæ•°1
-                 uut.alu_operand2,         // ALUæ“ä½œæ•°2
-                 uut.alu_result,           // ALUç»“æœ
-                 uut.alu_control,          // ALUæ§åˆ¶ä¿¡å·
-                 uut.alu_end               // ALUè¿ç®—å®Œæˆæ ‡å¿—
+                 uut.alu_operand1,         // ALU²Ù×÷Êı1
+                 uut.alu_operand2,         // ALU²Ù×÷Êı2
+                 uut.alu_result,           // ALU½á¹û
+                 uut.alu_control,          // ALU¿ØÖÆĞÅºÅ
+                 uut.alu_end               // ALUÔËËãÍê³É±êÖ¾
                 );
     end
 
-    // æ—¶é’Ÿä¿¡å·ç”Ÿæˆ
-    always #50 clk = ~clk;    // ä¸»æ—¶é’Ÿå‘¨æœŸ100ns
-    always #5  clk0 = ~clk0;  // å¯„å­˜å™¨æ–‡ä»¶æ—¶é’Ÿå‘¨æœŸ10ns
+    // Ê±ÖÓĞÅºÅÉú³É
+    always #50 clk = ~clk;    // Ö÷Ê±ÖÓÖÜÆÚ100ns
+    always #5  clk0 = ~clk0;  // ¼Ä´æÆ÷ÎÄ¼şÊ±ÖÓÖÜÆÚ10ns
 
-    // ç»“æœæ£€æŸ¥ä»»åŠ¡
+    // ½á¹û¼ì²éÈÎÎñ
     task check_result;
-        input [4:0] addr;         // è¦æ£€æŸ¥çš„å¯„å­˜å™¨åœ°å€
-        input [31:0] expected;    // æœŸæœ›å€¼
-        input [8*10:1] stage;     // æ£€æŸ¥é˜¶æ®µè¯´æ˜
+        input [4:0] addr;         // Òª¼ì²éµÄ¼Ä´æÆ÷µØÖ·
+        input [31:0] expected;    // ÆÚÍûÖµ
+        input [8*10:1] stage;     // ¼ì²é½×¶ÎËµÃ÷
         begin
             rf_addr = addr;
             #10;
             if (rf_data === expected) begin
-                $display("ç¬¬ %s é¡¹è®¡ç®—æ­£ç¡®: $%0d = %0d", stage, addr, rf_data);
+                $display("µÚ %s Ïî¼ÆËãÕıÈ·: $%0d = %0d", stage, addr, rf_data);
             end else begin
-                $display("ç¬¬ %s é¡¹è®¡ç®—é”™è¯¯: $%0d = %0d, æœŸæœ›å€¼ä¸º %0d", stage, addr, rf_data, expected);
+                $display("µÚ %s Ïî¼ÆËã´íÎó: $%0d = %0d, ÆÚÍûÖµÎª %0d", stage, addr, rf_data, expected);
             end
         end
     endtask

@@ -39,6 +39,8 @@ module regfile(
     always @(posedge clk) begin
         if (wen) begin
             rf[waddr] <= wdata;
+            // 添加调试信息
+            $display("写寄存器：Time=%3d waddr=%d wdata=%d", $time, waddr, wdata);
         end
     end
      

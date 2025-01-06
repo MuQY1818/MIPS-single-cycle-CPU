@@ -1,83 +1,85 @@
 `timescale 1ns / 1ps
 //*************************************************************************
-//   > æ–‡ä»¶å: single_cycle_cpu.v
-//   > æè¿°: å•å‘¨æœŸCPUé¡¶å±‚æ¨¡å—
-//   > åŠŸèƒ½: å®ç°16æ¡MIPSæŒ‡ä»¤çš„å•å‘¨æœŸCPUï¼ŒåŒ…æ‹¬ï¼š
-//          1. Rå‹æŒ‡ä»¤ï¼šADDU, SUBU, SLT, AND, NOR, OR, XOR, SLL, SRL, MUL
-//          2. Iå‹æŒ‡ä»¤ï¼šADDIU, LW, SW, LUI, BEQ, BNE
-//          3. Jå‹æŒ‡ä»¤ï¼šJ
-//   > ç‰¹ç‚¹: æŒ‡ä»¤ROMå’Œæ•°æ®RAMé‡‡ç”¨å¼‚æ­¥è¯»å–ï¼Œä¾¿äºå•å‘¨æœŸCPUå®ç°
+//   > ÎÄ¼şÃû: single_cycle_cpu.v
+//   > ÃèÊö: µ¥ÖÜÆÚCPU¶¥²ãÄ£¿é
+//   > ¹¦ÄÜ: ÊµÏÖ16ÌõMIPSÖ¸ÁîµÄµ¥ÖÜÆÚCPU£¬°üÀ¨£º
+//          1. RĞÍÖ¸Áî£ºADDU, SUBU, SLT, AND, NOR, OR, XOR, SLL, SRL, MUL
+//          2. IĞÍÖ¸Áî£ºADDIU, LW, SW, LUI, BEQ, BNE
+//          3. JĞÍÖ¸Áî£ºJ
+//   > ÌØµã: Ö¸ÁîROMºÍÊı¾İRAM²ÉÓÃÒì²½¶ÁÈ¡£¬±ãÓÚµ¥ÖÜÆÚCPUÊµÏÖ
 //*************************************************************************
-`define STARTADDR 32'd0  // ç¨‹åºèµ·å§‹åœ°å€
+`define STARTADDR 32'd0  // ³ÌĞòÆğÊ¼µØÖ·
 
 module single_cycle_cpu(
-    input  clk0,              // æ—¶é’Ÿä¿¡å·0
-    input  clk,               // CPUæ—¶é’Ÿ
-    input  resetn,            // å¤ä½ä¿¡å·ï¼Œä½ç”µå¹³æœ‰æ•ˆ
+    input  clk0,              // Ê±ÖÓĞÅºÅ0
+    input  clk,               // CPUÊ±ÖÓ
+    input  resetn,            // ¸´Î»ĞÅºÅ£¬µÍµçÆ½ÓĞĞ§
 
-    // è°ƒè¯•æ¥å£
-    input  [ 4:0] rf_addr,    // å¯„å­˜å™¨å †è¯»åœ°å€
-    input  [31:0] mem_addr,   // å­˜å‚¨å™¨è¯»åœ°å€
-    output [31:0] rf_data,    // å¯„å­˜å™¨æ•°æ®
-    output [31:0] mem_data,   // å­˜å‚¨å™¨æ•°æ®
-    output [31:0] cpu_pc,     // å½“å‰PCå€¼
-    output [31:0] cpu_inst    // å½“å‰æŒ‡ä»¤
+    // µ÷ÊÔ½Ó¿Ú
+    input  [ 4:0] rf_addr,    // ¼Ä´æÆ÷¶Ñ¶ÁµØÖ·
+    input  [31:0] mem_addr,   // ´æ´¢Æ÷¶ÁµØÖ·
+    output [31:0] rf_data,    // ¼Ä´æÆ÷Êı¾İ
+    output [31:0] mem_data,   // ´æ´¢Æ÷Êı¾İ
+    output [31:0] cpu_pc,     // µ±Ç°PCÖµ
+    output [31:0] cpu_inst    // µ±Ç°Ö¸Áî
     );
 
-//-----{å–æŒ‡æ¨¡å—}begin-----
-    // PCå¯„å­˜å™¨ä¸ä¸‹ä¸€æ¡æŒ‡ä»¤åœ°å€è®¡ç®—
-    reg  [31:0] pc;           // ç¨‹åºè®¡æ•°å™¨
-    wire [31:0] next_pc;      // ä¸‹ä¸€æ¡æŒ‡ä»¤åœ°å€
-    wire [31:0] seq_pc;       // é¡ºåºæ‰§è¡Œçš„ä¸‹ä¸€æ¡æŒ‡ä»¤åœ°å€
-    wire [31:0] jbr_target;   // è·³è½¬ç›®æ ‡åœ°å€
-    wire        jbr_taken;    // è·³è½¬ä¿¡å·
+//-----{È¡Ö¸Ä£¿é}begin-----
+    // PC¼Ä´æÆ÷ÓëÏÂÒ»ÌõÖ¸ÁîµØÖ·¼ÆËã
+    reg  [31:0] pc;           // ³ÌĞò¼ÆÊıÆ÷
+    wire [31:0] next_pc;      // ÏÂÒ»ÌõÖ¸ÁîµØÖ·
+    wire [31:0] seq_pc;       // Ë³ĞòÖ´ĞĞµÄÏÂÒ»ÌõÖ¸ÁîµØÖ·
+    wire [31:0] jbr_target;   // Ìø×ªÄ¿±êµØÖ·
+    wire        jbr_taken;    // Ìø×ªĞÅºÅ
 
-    // è®¡ç®—é¡ºåºæ‰§è¡Œçš„ä¸‹ä¸€æ¡æŒ‡ä»¤åœ°å€ï¼šPC = PC + 4
+    // ¼ÆËãË³ĞòÖ´ĞĞµÄÏÂÒ»ÌõÖ¸ÁîµØÖ·£ºPC = PC + 4
     assign seq_pc[31:2] = pc[31:2] + 1'b1;
     assign seq_pc[1:0]  = pc[1:0];
     
-    // æ ¹æ®è·³è½¬ä¿¡å·é€‰æ‹©ä¸‹ä¸€æ¡æŒ‡ä»¤åœ°å€
+    // ¸ù¾İÌø×ªĞÅºÅÑ¡ÔñÏÂÒ»ÌõÖ¸ÁîµØÖ·
     assign next_pc = jbr_taken ? jbr_target : seq_pc;
 
-    // PCå¯„å­˜å™¨æ›´æ–°
+    // PC¼Ä´æÆ÷¸üĞÂ
     always @(posedge clk) begin
         if (!resetn) begin
-            pc <= `STARTADDR;  // å¤ä½æ—¶æŒ‡å‘ç¨‹åºèµ·å§‹åœ°å€
+            pc <= `STARTADDR;  // ¸´Î»Ê±Ö¸Ïò³ÌĞòÆğÊ¼µØÖ·
         end
         else begin
-            pc <= next_pc;     // æ›´æ–°ä¸ºä¸‹ä¸€æ¡æŒ‡ä»¤åœ°å€
+            pc <= next_pc;     // ¸üĞÂÎªÏÂÒ»ÌõÖ¸ÁîµØÖ·
         end
     end
 
-    // æŒ‡ä»¤å­˜å‚¨å™¨æ¥å£
-    wire [31:0] inst_addr;    // æŒ‡ä»¤åœ°å€
-    wire [31:0] inst;         // å½“å‰æŒ‡ä»¤
-    assign inst_addr = pc;    // æŒ‡ä»¤åœ°å€å°±æ˜¯PCçš„å€¼
+    // Ö¸Áî´æ´¢Æ÷½Ó¿Ú
+    wire [31:0] inst_addr;    // Ö¸ÁîµØÖ·
+    wire [31:0] inst;         // µ±Ç°Ö¸Áî
+    assign inst_addr = pc;    // Ö¸ÁîµØÖ·¾ÍÊÇPCµÄÖµ
     
-    // ä¾‹åŒ–æŒ‡ä»¤å­˜å‚¨å™¨
+    // Àı»¯Ö¸Áî´æ´¢Æ÷
     inst_rom inst_rom_module(
-        .addr  (inst_addr[6:2]),  // è¾“å…¥æŒ‡ä»¤åœ°å€
-        .inst  (inst          )   // è¾“å‡ºæŒ‡ä»¤
+        .addr  (inst_addr[6:2]),  // ÊäÈëÖ¸ÁîµØÖ·
+        .inst  (inst          )   // Êä³öÖ¸Áî
     );
+
+    // ¼òµ¥À´Ëµ¾ÍÊÇ£¬¸ù¾İÊäÈëµÄµØÖ·£¬´ÓÖ¸Áî´æ´¢Æ÷ÖĞÈ¡³ö¶ÔÓ¦µÄÖ¸Áî
     
-    // è°ƒè¯•æ¥å£è¾“å‡º
+    // µ÷ÊÔ½Ó¿ÚÊä³ö
     assign cpu_pc   = pc;
     assign cpu_inst = inst;
-//-----{å–æŒ‡æ¨¡å—}end-----
+//-----{È¡Ö¸Ä£¿é}end-----
 
-//-----{è¯‘ç æ¨¡å—}begin-----
-    // æŒ‡ä»¤åˆ†è§£
-    wire [5:0] op;       // æ“ä½œç 
-    wire [4:0] rs;       // æºæ“ä½œæ•°1åœ°å€
-    wire [4:0] rt;       // æºæ“ä½œæ•°2åœ°å€
-    wire [4:0] rd;       // ç›®æ ‡æ“ä½œæ•°åœ°å€
-    wire [4:0] sa;       // ç§»ä½é‡
-    wire [5:0] funct;    // åŠŸèƒ½ç 
-    wire [15:0] imm;     // ç«‹å³æ•°
-    wire [15:0] offset;  // åˆ†æ”¯è·³è½¬åç§»é‡
-    wire [25:0] target;  // è·³è½¬ç›®æ ‡åœ°å€
+//-----{ÒëÂëÄ£¿é}begin-----
+    // Ö¸Áî·Ö½â
+    wire [5:0] op;       // ²Ù×÷Âë
+    wire [4:0] rs;       // Ô´²Ù×÷Êı1µØÖ·
+    wire [4:0] rt;       // Ô´²Ù×÷Êı2µØÖ·
+    wire [4:0] rd;       // Ä¿±ê²Ù×÷ÊıµØÖ·
+    wire [4:0] sa;       // ÒÆÎ»Á¿
+    wire [5:0] funct;    // ¹¦ÄÜÂë
+    wire [15:0] imm;     // Á¢¼´Êı
+    wire [15:0] offset;  // ·ÖÖ§Ìø×ªÆ«ÒÆÁ¿
+    wire [25:0] target;  // Ìø×ªÄ¿±êµØÖ·
 
-    // æŒ‡ä»¤åˆ†æ®µ
+    // Ö¸Áî·Ö¶Î
     assign op     = inst[31:26];
     assign rs     = inst[25:21];
     assign rt     = inst[20:16];
@@ -88,75 +90,75 @@ module single_cycle_cpu(
     assign offset = inst[15:0];
     assign target = inst[25:0];
 
-    // æŒ‡ä»¤ç±»å‹åˆ¤æ–­
-    wire op_zero;    // æ“ä½œç å…¨0
-    wire sa_zero;    // saåŸŸå…¨0
+    // Ö¸ÁîÀàĞÍÅĞ¶Ï
+    wire op_zero;    // ²Ù×÷ÂëÈ«0
+    wire sa_zero;    // saÓòÈ«0
     assign op_zero = ~(|op);
     assign sa_zero = ~(|sa);
     
-    // æŒ‡ä»¤è§£ç ï¼Œæ‰€æœ‰æ”¯æŒçš„æŒ‡ä»¤
+    // Ö¸Áî½âÂë£¬ËùÓĞÖ§³ÖµÄÖ¸Áî
     wire inst_ADDU, inst_SUBU, inst_SLT, inst_AND;
     wire inst_NOR , inst_OR  , inst_XOR, inst_SLL;
     wire inst_SRL , inst_ADDIU, inst_BEQ, inst_BNE;
     wire inst_LW  , inst_SW   , inst_LUI, inst_J;
     wire inst_MUL;
 
-    // Rå‹æŒ‡ä»¤è§£ç 
-    assign inst_ADDU = op_zero & sa_zero & (funct == 6'b100001);  // æ— ç¬¦å·åŠ æ³•
-    assign inst_SUBU = op_zero & sa_zero & (funct == 6'b100011);  // æ— ç¬¦å·å‡æ³•
-    assign inst_SLT  = op_zero & sa_zero & (funct == 6'b101010);  // å°äºåˆ™ç½®ä½
-    assign inst_AND  = op_zero & sa_zero & (funct == 6'b100100);  // æŒ‰ä½ä¸
-    assign inst_NOR  = op_zero & sa_zero & (funct == 6'b100111);  // æŒ‰ä½æˆ–é
-    assign inst_OR   = op_zero & sa_zero & (funct == 6'b100101);  // æŒ‰ä½æˆ–
-    assign inst_XOR  = op_zero & sa_zero & (funct == 6'b100110);  // æŒ‰ä½å¼‚æˆ–
-    assign inst_SLL  = op_zero & (rs==5'd0) & (funct == 6'b000000);  // é€»è¾‘å·¦ç§»
-    assign inst_SRL  = op_zero & (rs==5'd0) & (funct == 6'b000010);  // é€»è¾‘å³ç§»
-    assign inst_MUL  = (op == 6'b011100) & sa_zero & (funct == 6'b000010);  // ä¹˜æ³•
+    // RĞÍÖ¸Áî½âÂë
+    assign inst_ADDU = op_zero & sa_zero & (funct == 6'b100001);  // ÎŞ·ûºÅ¼Ó·¨
+    assign inst_SUBU = op_zero & sa_zero & (funct == 6'b100011);  // ÎŞ·ûºÅ¼õ·¨
+    assign inst_SLT  = op_zero & sa_zero & (funct == 6'b101010);  // Ğ¡ÓÚÔòÖÃÎ»
+    assign inst_AND  = op_zero & sa_zero & (funct == 6'b100100);  // °´Î»Óë
+    assign inst_NOR  = op_zero & sa_zero & (funct == 6'b100111);  // °´Î»»ò·Ç
+    assign inst_OR   = op_zero & sa_zero & (funct == 6'b100101);  // °´Î»»ò
+    assign inst_XOR  = op_zero & sa_zero & (funct == 6'b100110);  // °´Î»Òì»ò
+    assign inst_SLL  = op_zero & (rs==5'd0) & (funct == 6'b000000);  // Âß¼­×óÒÆ
+    assign inst_SRL  = op_zero & (rs==5'd0) & (funct == 6'b000010);  // Âß¼­ÓÒÒÆ
+    assign inst_MUL  = (op == 6'b011100) & sa_zero & (funct == 6'b000010);  // ³Ë·¨
 
-    // Iå‹æŒ‡ä»¤è§£ç 
-    assign inst_ADDIU = (op == 6'b001001);  // ç«‹å³æ•°æ— ç¬¦å·åŠ æ³•
-    assign inst_BEQ   = (op == 6'b000100);  // ç›¸ç­‰åˆ†æ”¯
-    assign inst_BNE   = (op == 6'b000101);  // ä¸ç­‰åˆ†æ”¯
-    assign inst_LW    = (op == 6'b100011);  // ä»å†…å­˜åŠ è½½
-    assign inst_SW    = (op == 6'b101011);  // å­˜å‚¨åˆ°å†…å­˜
-    assign inst_LUI   = (op == 6'b001111);  // ç«‹å³æ•°åŠ è½½åˆ°é«˜åŠå­—èŠ‚
+    // IĞÍÖ¸Áî½âÂë
+    assign inst_ADDIU = (op == 6'b001001);  // Á¢¼´ÊıÎŞ·ûºÅ¼Ó·¨
+    assign inst_BEQ   = (op == 6'b000100);  // ÏàµÈ·ÖÖ§
+    assign inst_BNE   = (op == 6'b000101);  // ²»µÈ·ÖÖ§
+    assign inst_LW    = (op == 6'b100011);  // ´ÓÄÚ´æ¼ÓÔØ
+    assign inst_SW    = (op == 6'b101011);  // ´æ´¢µ½ÄÚ´æ
+    assign inst_LUI   = (op == 6'b001111);  // Á¢¼´Êı¼ÓÔØµ½¸ß°ë×Ö½Ú
 
-    // Jå‹æŒ‡ä»¤è§£ç 
-    assign inst_J     = (op == 6'b000010);  // æ— æ¡ä»¶è·³è½¬
+    // JĞÍÖ¸Áî½âÂë
+    assign inst_J     = (op == 6'b000010);  // ÎŞÌõ¼şÌø×ª
 
-    // è·³è½¬æŒ‡ä»¤å¤„ç†
-    wire        j_taken;     // JæŒ‡ä»¤è·³è½¬ä¿¡å·
-    wire [31:0] j_target;    // JæŒ‡ä»¤è·³è½¬ç›®æ ‡
+    // Ìø×ªÖ¸Áî´¦Àí
+    wire        j_taken;     // JÖ¸ÁîÌø×ªĞÅºÅ
+    wire [31:0] j_target;    // JÖ¸ÁîÌø×ªÄ¿±ê
     assign j_taken = inst_J;
-    // JæŒ‡ä»¤è·³è½¬ç›®æ ‡åœ°å€ï¼šPC={PC[31:28],target<<2}
+    // JÖ¸ÁîÌø×ªÄ¿±êµØÖ·£ºPC={PC[31:28],target<<2}
     assign j_target = {pc[31:28], target, 2'b00};
 
-    // åˆ†æ”¯æŒ‡ä»¤å¤„ç†
-    wire        beq_taken;    // BEQæŒ‡ä»¤è·³è½¬ä¿¡å·
-    wire        bne_taken;    // BNEæŒ‡ä»¤è·³è½¬ä¿¡å·
-    wire [31:0] br_target;    // åˆ†æ”¯æŒ‡ä»¤è·³è½¬ç›®æ ‡
-    assign beq_taken = (rs_value == rt_value);  // ç›¸ç­‰æ—¶è·³è½¬
-    assign bne_taken = ~beq_taken;              // ä¸ç­‰æ—¶è·³è½¬
-    // åˆ†æ”¯è·³è½¬ç›®æ ‡åœ°å€ï¼šPC=PC+offset<<2
+    // ·ÖÖ§Ö¸Áî´¦Àí
+    wire        beq_taken;    // BEQÖ¸ÁîÌø×ªĞÅºÅ
+    wire        bne_taken;    // BNEÖ¸ÁîÌø×ªĞÅºÅ
+    wire [31:0] br_target;    // ·ÖÖ§Ö¸ÁîÌø×ªÄ¿±ê
+    assign beq_taken = (rs_value == rt_value);  // ÏàµÈÊ±Ìø×ª
+    assign bne_taken = ~beq_taken;              // ²»µÈÊ±Ìø×ª
+    // ·ÖÖ§Ìø×ªÄ¿±êµØÖ·£ºPC=PC+offset<<2
     assign br_target[31:2] = pc[31:2] + {{14{offset[15]}}, offset};
     assign br_target[1:0]  = pc[1:0];
 
-    // è·³è½¬ä¿¡å·å’Œç›®æ ‡åœ°å€çš„æœ€ç»ˆç¡®å®š
-    assign jbr_taken = j_taken                // æ— æ¡ä»¶è·³è½¬
-                    | inst_BEQ & beq_taken    // ç›¸ç­‰åˆ†æ”¯è·³è½¬
-                    | inst_BNE & bne_taken;   // ä¸ç­‰åˆ†æ”¯è·³è½¬
+    // Ìø×ªĞÅºÅºÍÄ¿±êµØÖ·µÄ×îÖÕÈ·¶¨
+    assign jbr_taken = j_taken                // ÎŞÌõ¼şÌø×ª
+                    | inst_BEQ & beq_taken    // ÏàµÈ·ÖÖ§Ìø×ª
+                    | inst_BNE & bne_taken;   // ²»µÈ·ÖÖ§Ìø×ª
     assign jbr_target = j_taken ? j_target : br_target;
 
-    // å¯„å­˜å™¨å †æ¥å£ä¿¡å·
-    wire rf_wen;          // å¯„å­˜å™¨å†™ä½¿èƒ½
-    wire [4:0] rf_waddr;  // å¯„å­˜å™¨å†™åœ°å€
-    wire [31:0] rf_wdata; // å¯„å­˜å™¨å†™æ•°æ®
-    wire [31:0] rs_value; // rså¯„å­˜å™¨å€¼
-    wire [31:0] rt_value; // rtå¯„å­˜å™¨å€¼
+    // ¼Ä´æÆ÷¶Ñ½Ó¿ÚĞÅºÅ
+    wire rf_wen;          // ¼Ä´æÆ÷Ğ´Ê¹ÄÜ
+    wire [4:0] rf_waddr;  // ¼Ä´æÆ÷Ğ´µØÖ·
+    wire [31:0] rf_wdata; // ¼Ä´æÆ÷Ğ´Êı¾İ
+    wire [31:0] rs_value; // rs¼Ä´æÆ÷Öµ
+    wire [31:0] rt_value; // rt¼Ä´æÆ÷Öµ
 
-    // ä¾‹åŒ–å¯„å­˜å™¨å †æ¨¡å—
+    // Àı»¯¼Ä´æÆ÷¶ÑÄ£¿é
     regfile rf_module(
-        .clk       (clk0     ),
+        .clk       (clk      ),
         .wen       (rf_wen   ),
         .raddr1    (rs       ),
         .raddr2    (rt       ),
@@ -168,49 +170,49 @@ module single_cycle_cpu(
         .test_data (rf_data  )
     );
     
-    // ALUæ§åˆ¶ä¿¡å·ç”Ÿæˆ
+    // ALU¿ØÖÆĞÅºÅÉú³É
     wire inst_add, inst_sub, inst_slt, inst_sltu;
     wire inst_and, inst_nor, inst_or, inst_xor;
     wire inst_sll, inst_srl, inst_sra, inst_lui;
     
-    // ç®—æœ¯è¿ç®—æŒ‡ä»¤
+    // ËãÊõÔËËãÖ¸Áî
     assign inst_add  = inst_ADDU | inst_ADDIU | inst_LW | inst_SW;
     assign inst_sub  = inst_SUBU;
     assign inst_slt  = inst_SLT;
-    assign inst_sltu = 1'b0;      // æœªå®ç°
+    assign inst_sltu = 1'b0;      // Î´ÊµÏÖ
     
-    // é€»è¾‘è¿ç®—æŒ‡ä»¤
+    // Âß¼­ÔËËãÖ¸Áî
     assign inst_and = inst_AND;
     assign inst_nor = inst_NOR;
     assign inst_or  = inst_OR;
     assign inst_xor = inst_XOR;
     
-    // ç§»ä½æŒ‡ä»¤
+    // ÒÆÎ»Ö¸Áî
     assign inst_sll = inst_SLL;
     assign inst_srl = inst_SRL;
-    assign inst_sra = 1'b0;       // æœªå®ç°
+    assign inst_sra = 1'b0;       // Î´ÊµÏÖ
     assign inst_lui = inst_LUI;
 
-    // ç«‹å³æ•°å¤„ç†
-    wire [31:0] sext_imm;         // ç¬¦å·æ‰©å±•åçš„ç«‹å³æ•°
-    wire inst_shf_sa;             // ä½¿ç”¨saåŸŸä½œä¸ºåç§»é‡çš„æŒ‡ä»¤
-    wire inst_imm_sign;           // éœ€è¦ç«‹å³æ•°ç¬¦å·æ‰©å±•çš„æŒ‡ä»¤
+    // Á¢¼´Êı´¦Àí
+    wire [31:0] sext_imm;         // ·ûºÅÀ©Õ¹ºóµÄÁ¢¼´Êı
+    wire inst_shf_sa;             // Ê¹ÓÃsaÓò×÷ÎªÆ«ÒÆÁ¿µÄÖ¸Áî
+    wire inst_imm_sign;           // ĞèÒªÁ¢¼´Êı·ûºÅÀ©Õ¹µÄÖ¸Áî
     assign sext_imm     = {{16{imm[15]}}, imm};
     assign inst_shf_sa  = inst_SLL | inst_SRL;
     assign inst_imm_sign = inst_ADDIU | inst_LUI | inst_LW | inst_SW;
     
-    // ALUè¾“å…¥ä¿¡å·
+    // ALUÊäÈëĞÅºÅ
     wire [31:0] alu_operand1;
     wire [31:0] alu_operand2;
     wire [12:0] alu_control;
     
-    // ALUç¬¬ä¸€ä¸ªæ“ä½œæ•°é€‰æ‹©
+    // ALUµÚÒ»¸ö²Ù×÷ÊıÑ¡Ôñ
     assign alu_operand1 = inst_shf_sa ? {27'd0,sa} : rs_value;
     
-    // ALUç¬¬äºŒä¸ªæ“ä½œæ•°é€‰æ‹©
+    // ALUµÚ¶ş¸ö²Ù×÷ÊıÑ¡Ôñ
     assign alu_operand2 = inst_imm_sign ? sext_imm : rt_value;
     
-    // ALUæ§åˆ¶ä¿¡å·
+    // ALU¿ØÖÆĞÅºÅ
     assign alu_control = {inst_MUL,
                          inst_add,
                          inst_sub,
@@ -224,13 +226,13 @@ module single_cycle_cpu(
                          inst_srl,
                          inst_sra,
                          inst_lui};
-//-----{è¯‘ç æ¨¡å—}end-----
+//-----{ÒëÂëÄ£¿é}end-----
 
-//-----{æ‰§è¡Œæ¨¡å—}begin-----
-    wire [31:0] alu_result;  // ALUè®¡ç®—ç»“æœ
-    wire alu_end;            // ALUè®¡ç®—å®Œæˆä¿¡å·
+//-----{Ö´ĞĞÄ£¿é}begin-----
+    wire [31:0] alu_result;  // ALU¼ÆËã½á¹û
+    wire alu_end;            // ALU¼ÆËãÍê³ÉĞÅºÅ
     
-    // ä¾‹åŒ–ALUæ¨¡å—
+    // Àı»¯ALUÄ£¿é
     alu alu_module(
         .clk         (clk0        ),
         .alu_control (alu_control ),
@@ -239,20 +241,20 @@ module single_cycle_cpu(
         .alu_result  (alu_result  ),
         .alu_end     (alu_end     )
     );
-//-----{æ‰§è¡Œæ¨¡å—}end-----
+//-----{Ö´ĞĞÄ£¿é}end-----
 
-//-----{è®¿å­˜æ¨¡å—}begin-----
-    wire [3:0]  dm_wen;     // æ•°æ®å­˜å‚¨å™¨å†™ä½¿èƒ½
-    wire [31:0] dm_addr;    // æ•°æ®å­˜å‚¨å™¨è¯»å†™åœ°å€
-    wire [31:0] dm_wdata;   // æ•°æ®å­˜å‚¨å™¨å†™æ•°æ®
-    wire [31:0] dm_rdata;   // æ•°æ®å­˜å‚¨å™¨è¯»æ•°æ®
+//-----{·Ã´æÄ£¿é}begin-----
+    wire [3:0]  dm_wen;     // Êı¾İ´æ´¢Æ÷Ğ´Ê¹ÄÜ
+    wire [31:0] dm_addr;    // Êı¾İ´æ´¢Æ÷¶ÁĞ´µØÖ·
+    wire [31:0] dm_wdata;   // Êı¾İ´æ´¢Æ÷Ğ´Êı¾İ
+    wire [31:0] dm_rdata;   // Êı¾İ´æ´¢Æ÷¶ÁÊı¾İ
     
-    // æ•°æ®å­˜å‚¨å™¨å†™ä½¿èƒ½ä¿¡å·ï¼šSWæŒ‡ä»¤æœ‰æ•ˆä¸”CPUä¸åœ¨å¤ä½çŠ¶æ€
+    // Êı¾İ´æ´¢Æ÷Ğ´Ê¹ÄÜĞÅºÅ£ºSWÖ¸ÁîÓĞĞ§ÇÒCPU²»ÔÚ¸´Î»×´Ì¬
     assign dm_wen   = {4{inst_SW}} & {4{resetn}};
-    assign dm_addr  = alu_result;               // è¯»å†™åœ°å€ä¸ºALUè®¡ç®—å€¼
-    assign dm_wdata = rt_value;                 // å†™æ•°æ®ä¸ºrtå¯„å­˜å™¨å€¼
+    assign dm_addr  = alu_result;               // ¶ÁĞ´µØÖ·ÎªALU¼ÆËãÖµ
+    assign dm_wdata = rt_value;                 // Ğ´Êı¾İÎªrt¼Ä´æÆ÷Öµ
     
-    // ä¾‹åŒ–æ•°æ®å­˜å‚¨å™¨æ¨¡å—
+    // Àı»¯Êı¾İ´æ´¢Æ÷Ä£¿é
     data_ram data_ram_module(
         .clk        (clk          ),
         .wen        (dm_wen       ),
@@ -262,25 +264,25 @@ module single_cycle_cpu(
         .test_addr  (mem_addr[6:2]),
         .test_data  (mem_data     )
     );
-//-----{è®¿å­˜æ¨¡å—}end-----
+//-----{·Ã´æÄ£¿é}end-----
 
-//-----{å†™å›æ¨¡å—}begin-----
-    wire inst_wdest_rt;   // å¯„å­˜å™¨å†™å›åœ°å€ä¸ºrtçš„æŒ‡ä»¤
-    wire inst_wdest_rd;   // å¯„å­˜å™¨å†™å›åœ°å€ä¸ºrdçš„æŒ‡ä»¤
+//-----{Ğ´»ØÄ£¿é}begin-----
+    wire inst_wdest_rt;   // ¼Ä´æÆ÷Ğ´»ØµØÖ·ÎªrtµÄÖ¸Áî
+    wire inst_wdest_rd;   // ¼Ä´æÆ÷Ğ´»ØµØÖ·ÎªrdµÄÖ¸Áî
     
-    // å†™å›åœ°å€é€‰æ‹©ä¿¡å·
+    // Ğ´»ØµØÖ·Ñ¡ÔñĞÅºÅ
     assign inst_wdest_rt = inst_ADDIU | inst_LW | inst_LUI;
     assign inst_wdest_rd = inst_ADDU | inst_SUBU | inst_SLT | inst_AND | inst_NOR
                         | inst_OR   | inst_XOR  | inst_SLL | inst_SRL;
     
-    // å¯„å­˜å™¨å†™ä½¿èƒ½ä¿¡å·
+    // ¼Ä´æÆ÷Ğ´Ê¹ÄÜĞÅºÅ
     assign rf_wen = (inst_wdest_rt | inst_wdest_rd | (inst_MUL&alu_end)) & resetn;
     
-    // å¯„å­˜å™¨å†™å›åœ°å€é€‰æ‹©ï¼šä½¿ç”¨rdçš„æŒ‡ä»¤æˆ–ä¹˜æ³•æŒ‡ä»¤é€‰rdï¼Œå…¶ä»–é€‰rt
+    // ¼Ä´æÆ÷Ğ´»ØµØÖ·Ñ¡Ôñ£ºÊ¹ÓÃrdµÄÖ¸Áî»ò³Ë·¨Ö¸ÁîÑ¡rd£¬ÆäËûÑ¡rt
     assign rf_waddr = (inst_wdest_rd | (inst_MUL&alu_end)) ? rd : rt;
     
-    // å¯„å­˜å™¨å†™å›æ•°æ®é€‰æ‹©ï¼šLWæŒ‡ä»¤å†™å›å­˜å‚¨å™¨æ•°æ®ï¼Œå…¶ä»–æŒ‡ä»¤å†™å›ALUç»“æœ
+    // ¼Ä´æÆ÷Ğ´»ØÊı¾İÑ¡Ôñ£ºLWÖ¸ÁîĞ´»Ø´æ´¢Æ÷Êı¾İ£¬ÆäËûÖ¸ÁîĞ´»ØALU½á¹û
     assign rf_wdata = inst_LW ? dm_rdata : alu_result;
-//-----{å†™å›æ¨¡å—}end-----
+//-----{Ğ´»ØÄ£¿é}end-----
 
 endmodule
